@@ -1,0 +1,11 @@
+.venv/
+data/
+recordings/
+certs/
+*.pem
+*.key
+*.log
+core
+core.*
+__pycache__/
+.DS_Store

@@ -1,0 +1,104 @@
+--- a/Panthera-HT_robot_lerobot/src/lerobot_robot_panthera/panthera_dual_follower.py
++++ b/Panthera-HT_robot_lerobot/src/lerobot_robot_panthera/panthera_dual_follower.py
+@@ -107,16 +107,9 @@
+                 return cameras
+ 
+     except Exception as e:
+-        logger.error(f"Failed to auto-detect RealSense cameras: {e}")
+-        raise RuntimeError(
+-            f"Camera detection failed: {e}\n"
+-            "Dual-arm leader-follower control requires a D435 top-view camera."
+-        )
+-
+-    raise RuntimeError(
+-        "No RealSense cameras were detected\n"
+-        "Dual-arm leader-follower control requires a D435 top-view camera."
+-    )
++        logger.info(f"No RealSense cameras detected: {e}")
++
++    return {}
+ 
+ @RobotConfig.register_subclass("panthera_dual_follower")
+ @dataclass
+@@ -125,7 +118,7 @@
+     left_param_path: str = "robot_param/LeftFollower.yaml"
+ 
+     right_param_path: str = "robot_param/Follower.yaml"
+-    cameras: dict[str, CameraConfig] = field(default_factory=default_cameras_factory)
++    cameras: dict[str, CameraConfig] = field(default_factory=dict)
+ 
+ class PantheraDualFollower(Robot):
+     """
+--- a/Panthera-HT_robot_lerobot/src/lerobot_robot_panthera/panthera_follower.py
++++ b/Panthera-HT_robot_lerobot/src/lerobot_robot_panthera/panthera_follower.py
+@@ -154,18 +154,8 @@
+     except Exception as e:
+         logger.warning(f"Failed to auto-detect RealSense cameras: {e}")
+ 
+-    logger.info("Using default single-arm camera configuration")
+-    return {
+-        "wrist": RealSenseCameraConfig(
+-            serial_number_or_name="352122273105",
+-            fps=30,
+-            width=640,
+-            height=480,
+-            color_mode=ColorMode.RGB,
+-            use_depth=False,
+-            rotation=Cv2Rotation.NO_ROTATION
+-        )
+-    }
++    logger.info("No RealSense cameras detected; configure OpenCV cameras explicitly")
++    return {}
+ 
+ @RobotConfig.register_subclass("panthera_follower")
+ @dataclass
+@@ -173,7 +163,7 @@
+     # Path to the Panthera specific config file (e.g. Follower.yaml)
+     # Can be absolute or relative to project root
+     param_path: str = "robot_param/Follower.yaml"
+-    cameras: dict[str, CameraConfig] = field(default_factory=default_cameras_factory)
++    cameras: dict[str, CameraConfig] = field(default_factory=dict)
+ 
+ class PantheraFollower(Robot):
+     """
+--- a/lerobot/pyproject.toml
++++ b/lerobot/pyproject.toml
+@@ -82,11 +82,10 @@
+ 
+     "draccus==0.10.0", # TODO: Remove ==
+     "gymnasium>=1.1.1,<2.0.0",
+-    "rerun-sdk>=0.24.0,<0.27.0",
+ 
+     # Support dependencies
+     "deepdiff>=7.0.1,<9.0.0",
+-    "imageio[ffmpeg]>=2.34.0,<3.0.0",
++    "imageio>=2.34.0,<3.0.0",
+     "termcolor>=2.4.0,<4.0.0",
+ ]
+ 
+--- a/lerobot/src/lerobot/utils/visualization_utils.py
++++ b/lerobot/src/lerobot/utils/visualization_utils.py
+@@ -17,13 +17,13 @@
+ from typing import Any
+ 
+ import numpy as np
+-import rerun as rr
+ 
+ from .constants import OBS_PREFIX, OBS_STR
+ 
+ 
+ def init_rerun(session_name: str = "lerobot_control_loop") -> None:
+     """Initializes the Rerun SDK for visualizing the control loop."""
++    import rerun as rr
+     batch_size = os.getenv("RERUN_FLUSH_NUM_BYTES", "8000")
+     os.environ["RERUN_FLUSH_NUM_BYTES"] = batch_size
+     rr.init(session_name)
+@@ -58,6 +58,8 @@
+         observation: An optional dictionary containing observation data to log.
+         action: An optional dictionary containing action data to log.
+     """
++    import rerun as rr
++
+     if observation:
+         for k, v in observation.items():
+             if v is None:

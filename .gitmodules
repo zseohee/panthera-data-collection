@@ -1,0 +1,12 @@
+[submodule "dependencies/QuestTelePanthera"]
+	path = dependencies/QuestTelePanthera
+	url = https://github.com/ggao50/QuestTelePanthera.git
+[submodule "dependencies/Panthera-HT_SDK"]
+	path = dependencies/Panthera-HT_SDK
+	url = https://github.com/HighTorque-Robotics/Panthera-HT_SDK.git
+[submodule "dependencies/Panthera-HT_lerobot"]
+	path = dependencies/Panthera-HT_lerobot
+	url = https://github.com/HighTorque-Robotics/Panthera-HT_lerobot.git
+[submodule "dependencies/Panthera-HT_Main"]
+	path = dependencies/Panthera-HT_Main
+	url = https://github.com/HighTorque-Robotics/Panthera-HT_Main.git

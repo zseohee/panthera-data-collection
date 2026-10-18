@@ -1,0 +1,11 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -57,5 +57,8 @@
+ requires = ["hatchling"]
+ build-backend = "hatchling.build"
+ 
++[tool.hatch.metadata]
++allow-direct-references = true
++
+ [tool.hatch.build.targets.wheel]
+ packages = ["src/vr_teleop_kit"]
