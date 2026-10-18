@@ -56,6 +56,44 @@ Use `lerobot-find-cameras opencv` after the USB webcam appears in both `lsusb` a
 
 Keep recordings, credentials, certificates, and locally generated arm configs out of Git. `data/` and `recordings/` are ignored. The intended dataset destination is [WiscoHumanoidsLab/actuator_assembly](https://huggingface.co/datasets/WiscoHumanoidsLab/actuator_assembly); check its README and validate a complete dataset before upload.
 
+## Manual teaching with three OpenCV cameras
+
+This example records a 30-second episode by manually guiding one Panthera arm, with three camera views. It uses Seohee's existing Ubuntu installation at `~/Panthera-HT_lerobot`, SDK at `~/Panthera-HT_SDK`, and venv at `~/.venvs/panthera`. Teammates should substitute their installation paths; a checkout of this workspace keeps the corresponding sources under `dependencies/`.
+
+The command requires the locally patched recorder that accepts `--auto_move_to_poses=false` and removes automatic return-to-zero moves during cleanup and disconnect. Those recording motion changes are not included in the compatibility patches currently committed to this repository. Do not assume the unmodified upstream recorder has the same behavior: it commands preset poses at startup and shutdown. Manual teaching still commands gravity compensation, so support the arm and keep the hardware stop accessible.
+
+First run `lerobot-find-cameras opencv` and verify that all three cameras actually deliver frames together. The example uses capture devices **0, 2, and 4**, not the discovery list positions 0, 1, and 2. Camera indices can change after reconnecting USB devices. At the time this example was added, camera 4 was detected but its frame capture still failed with USB transfer errors in UTM; successful three-camera recording has not been verified.
+
+```bash
+source ~/.venvs/panthera/bin/activate
+cd ~/Panthera-HT_lerobot/lerobot/src/lerobot/scripts
+
+python lerobot_record.py \
+  --robot.type=panthera_follower \
+  --robot.param_path="$HOME/Panthera-HT_SDK/panthera_python/robot_param/Follower.yaml" \
+  --robot.cameras="{cam0: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30}, cam2: {type: opencv, index_or_path: 2, width: 640, height: 480, fps: 30}, cam4: {type: opencv, index_or_path: 4, width: 640, height: 480, fps: 30}}" \
+  --auto_move_to_poses=false \
+  --dataset.repo_id="local/panthera_teaching_$(date +%Y%m%d_%H%M%S)" \
+  --dataset.single_task="manual_teaching_task" \
+  --dataset.num_episodes=1 \
+  --dataset.episode_time_s=30 \
+  --dataset.fps=30 \
+  --dataset.video=true \
+  --dataset.push_to_hub=false \
+  --display_data=false \
+  --play_sounds=false
+```
+
+Omitting `--teleop.type` and a policy selects the vendor's manual teaching mode; no Quest or separate leader arm is used. Confirm that `Follower.yaml` selects the intended arm's live serial port before starting. Wait for all three camera connection messages and `Recording episode` before guiding the arm, then let the episode and video encoding finish.
+
+Each run creates a timestamped local dataset under:
+
+```text
+~/Panthera-HT_lerobot/Panthera-HT_lerobot_dataset/Data Collection Dataset/local/panthera_teaching_<timestamp>/
+```
+
+After completion, check for `observation.images.cam0`, `observation.images.cam2`, and `observation.images.cam4` features in `meta/info.json`, and finalized MP4 files under `videos/`. A `video_path` template in the metadata alone does not establish that video was recorded. `--dataset.push_to_hub=false` keeps this run local.
+
 ## Updating a dependency
 
 In a separate review, update one submodule, retest the local patches and hardware workflow, then commit its new gitlink in this parent repository. Teammates receive the exact reviewed version with `git pull && git submodule update --init --recursive`.
